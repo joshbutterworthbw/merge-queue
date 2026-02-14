@@ -1,6 +1,9 @@
 name: Merge Queue Manager
 
 on:
+  # Allow self-dispatch to process next PR in queue
+  workflow_dispatch:
+
   # Trigger after entry/remove workflows complete
   workflow_run:
     workflows: ["Merge Queue Entry", "Merge Queue Remove"]

@@ -49,6 +49,7 @@ jobs:
 ```yaml
 name: Merge Queue Manager
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["Merge Queue Entry", "Merge Queue Remove"]
     types: [completed]

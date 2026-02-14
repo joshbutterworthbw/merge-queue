@@ -28,13 +28,11 @@ describe('Constants', () => {
   describe('DEFAULT_CONFIG', () => {
     it('should have all required fields', () => {
       expect(DEFAULT_CONFIG).toHaveProperty('queueLabel');
-      expect(DEFAULT_CONFIG).toHaveProperty('requiredApprovals');
       expect(DEFAULT_CONFIG).toHaveProperty('mergeMethod');
       expect(DEFAULT_CONFIG).toHaveProperty('autoUpdateBranch');
     });
 
     it('should have reasonable defaults', () => {
-      expect(DEFAULT_CONFIG.requiredApprovals).toBe(1);
       expect(DEFAULT_CONFIG.requireAllChecks).toBe(true);
       expect(DEFAULT_CONFIG.allowDraft).toBe(false);
       expect(DEFAULT_CONFIG.autoUpdateBranch).toBe(true);

@@ -1,18 +1,15 @@
 /**
  * PR validation logic for merge queue
+ *
+ * Note: Approval requirements are intentionally NOT checked here.
+ * GitHub branch protection rules already enforce required approvals,
+ * and the merge API call will be rejected if they aren't met.
+ * Duplicating that check here just forces users to keep two configs in sync.
  */
 
 import { GitHubAPI } from './github-api';
 import { Logger, createLogger } from '../utils/logger';
 import type { QueueConfig, ValidationResult } from '../types/queue';
-
-/**
- * Result of evaluating PR reviews (approvals and change requests)
- */
-interface ReviewEvaluation {
-  approvalCount: number;
-  hasChangeRequests: boolean;
-}
 
 /**
  * PR Validator class
@@ -49,7 +46,6 @@ export class PRValidator {
           valid: false,
           reason: 'PR is in draft state',
           checks: {
-            hasApprovals: false,
             checksPass: false,
             notDraft: false,
             noBlockLabels: false,
@@ -73,7 +69,6 @@ export class PRValidator {
           valid: false,
           reason: `PR has blocking label: ${blockingLabels.join(', ')}`,
           checks: {
-            hasApprovals: false,
             checksPass: false,
             notDraft,
             noBlockLabels: false,
@@ -84,45 +79,6 @@ export class PRValidator {
       }
       const noBlockLabels = true;
 
-      // Fetch reviews ONCE for all review-related checks
-      const reviews = await this.api.getPRReviews(prNumber);
-      const { approvalCount, hasChangeRequests } =
-        this.evaluateReviews(reviews);
-      const hasEnoughApprovals =
-        approvalCount >= this.config.requiredApprovals;
-
-      // Check for change requests first (more actionable than "insufficient approvals")
-      if (hasChangeRequests) {
-        return {
-          valid: false,
-          reason: 'Changes requested on PR',
-          checks: {
-            hasApprovals: hasEnoughApprovals,
-            checksPass: false,
-            notDraft,
-            noBlockLabels,
-            upToDate: false,
-            noConflicts: false,
-          },
-        };
-      }
-
-      // Check approvals
-      if (!hasEnoughApprovals) {
-        return {
-          valid: false,
-          reason: `Insufficient approvals: ${approvalCount}/${this.config.requiredApprovals}`,
-          checks: {
-            hasApprovals: false,
-            checksPass: false,
-            notDraft,
-            noBlockLabels,
-            upToDate: false,
-            noConflicts: false,
-          },
-        };
-      }
-
       // Check status checks
       const checksPass = await this.checkStatusChecks(pr.head.sha);
       if (!checksPass.valid) {
@@ -130,7 +86,6 @@ export class PRValidator {
           valid: false,
           reason: checksPass.reason,
           checks: {
-            hasApprovals: true,
             checksPass: false,
             notDraft,
             noBlockLabels,
@@ -150,7 +105,6 @@ export class PRValidator {
           valid: false,
           reason: 'PR has merge conflicts',
           checks: {
-            hasApprovals: true,
             checksPass: true,
             notDraft,
             noBlockLabels,
@@ -165,7 +119,6 @@ export class PRValidator {
       return {
         valid: true,
         checks: {
-          hasApprovals: true,
           checksPass: true,
           notDraft,
           noBlockLabels,
@@ -177,45 +130,6 @@ export class PRValidator {
       this.logger?.error('PR validation error', error as Error, { prNumber });
       throw error;
     }
-  }
-
-  /**
-   * Check if PR has required approvals (public convenience method).
-   * Fetches reviews from the API and delegates to evaluateReviews.
-   */
-  async checkApprovals(prNumber: number): Promise<boolean> {
-    const reviews = await this.api.getPRReviews(prNumber);
-    const { approvalCount, hasChangeRequests } = this.evaluateReviews(reviews);
-    return !hasChangeRequests && approvalCount >= this.config.requiredApprovals;
-  }
-
-  /**
-   * Evaluate reviews to determine approval count and change-request status.
-   *
-   * Uses a non-mutating reverse so the original array is untouched.
-   * Iterates newest-first and keeps only the latest review per user.
-   */
-  private evaluateReviews(
-    reviews: Array<{ state: string; user: { login: string } | null }>
-  ): ReviewEvaluation {
-    const latestReviews = new Map<string, string>();
-
-    // Iterate newest → oldest (non-mutating copy) and keep first entry per user
-    for (const review of [...reviews].reverse()) {
-      if (review.user && !latestReviews.has(review.user.login)) {
-        latestReviews.set(review.user.login, review.state);
-      }
-    }
-
-    const approvalCount = Array.from(latestReviews.values()).filter(
-      state => state === 'APPROVED'
-    ).length;
-
-    const hasChangeRequests = Array.from(latestReviews.values()).some(
-      state => state === 'CHANGES_REQUESTED'
-    );
-
-    return { approvalCount, hasChangeRequests };
   }
 
   /**

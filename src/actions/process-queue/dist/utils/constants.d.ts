@@ -19,7 +19,6 @@ export declare const DEFAULT_CONFIG: {
     processingLabel: string;
     updatingLabel: string;
     queuedLabel: string;
-    requiredApprovals: number;
     requireAllChecks: boolean;
     allowDraft: boolean;
     blockLabels: string[];

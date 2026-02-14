@@ -92,7 +92,6 @@ export interface QueueConfig {
   processingLabel: string;
   updatingLabel: string;
   queuedLabel: string;
-  requiredApprovals: number;
   requireAllChecks: boolean;
   allowDraft: boolean;
   blockLabels: string[];
@@ -110,7 +109,6 @@ export interface ValidationResult {
   valid: boolean;
   reason?: string;
   checks?: {
-    hasApprovals: boolean;
     checksPass: boolean;
     notDraft: boolean;
     noBlockLabels: boolean;

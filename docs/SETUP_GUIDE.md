@@ -140,7 +140,6 @@ In your target repository:
 4. Customize configuration (optional):
 
    Edit the workflow files to adjust settings like:
-   - `required-approvals`: Number of approvals needed
    - `merge-method`: `squash`, `merge`, or `rebase`
    - `block-labels`: Labels that prevent queueing
    - `update-timeout-minutes`: How long to wait for tests
@@ -240,9 +239,6 @@ Edit `.github/workflows/merge-queue-entry.yml` and `merge-queue-manager.yml`:
 
 ```yaml
 with:
-  # Number of approvals required
-  required-approvals: 1    # Change to 2 for stricter requirements
-
   # Merge method
   merge-method: squash     # Change to 'merge' or 'rebase'
 

@@ -56,11 +56,6 @@ inputs:
     default: 'queued-for-merge'
 
   # Validation requirements
-  required-approvals:
-    description: 'Minimum number of required approvals'
-    required: false
-    default: '1'
-
   require-all-checks:
     description: 'Require all checks to pass'
     required: false

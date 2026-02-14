@@ -56,7 +56,6 @@ describe('Action Helpers', () => {
     function setInputs(overrides: Record<string, string> = {}) {
       const defaults: Record<string, string> = {
         'merge-method': 'squash',
-        'required-approvals': '1',
         'update-timeout-minutes': '30',
         'queue-label': 'ready',
         'failed-label': 'merge-queue-failed',
@@ -86,7 +85,6 @@ describe('Action Helpers', () => {
       const config = getConfig();
 
       expect(config.mergeMethod).toBe('squash');
-      expect(config.requiredApprovals).toBe(1);
       expect(config.updateTimeoutMinutes).toBe(30);
       expect(config.queueLabel).toBe('ready');
       expect(config.failedLabel).toBe('merge-queue-failed');
@@ -113,24 +111,6 @@ describe('Action Helpers', () => {
 
       expect(() => getConfig()).toThrow('Invalid merge method');
       expect(() => getConfig()).toThrow('fast-forward');
-    });
-
-    it('should throw for non-numeric required-approvals', () => {
-      setInputs({ 'required-approvals': 'abc' });
-
-      expect(() => getConfig()).toThrow('Invalid required-approvals');
-    });
-
-    it('should throw for negative required-approvals', () => {
-      setInputs({ 'required-approvals': '-1' });
-
-      expect(() => getConfig()).toThrow('Invalid required-approvals');
-    });
-
-    it('should accept zero required-approvals', () => {
-      setInputs({ 'required-approvals': '0' });
-
-      expect(getConfig().requiredApprovals).toBe(0);
     });
 
     it('should throw for non-numeric update-timeout-minutes', () => {

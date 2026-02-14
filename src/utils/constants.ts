@@ -22,7 +22,6 @@ export const DEFAULT_CONFIG = {
   processingLabel: 'merge-processing',
   updatingLabel: 'merge-updating',
   queuedLabel: 'queued-for-merge',
-  requiredApprovals: 1,
   requireAllChecks: true,
   allowDraft: false,
   blockLabels: ['do-not-merge', 'wip'],

@@ -32416,7 +32416,6 @@ const DEFAULT_CONFIG = {
     processingLabel: 'merge-processing',
     updatingLabel: 'merge-updating',
     queuedLabel: 'queued-for-merge',
-    requiredApprovals: 1,
     requireAllChecks: true,
     allowDraft: false,
     blockLabels: ['do-not-merge', 'wip'],
@@ -32855,10 +32854,6 @@ function getConfig() {
     if (!VALID_MERGE_METHODS.includes(mergeMethod)) {
         throw new Error(`Invalid merge method: "${mergeMethod}". Must be one of: ${VALID_MERGE_METHODS.join(', ')}`);
     }
-    const requiredApprovals = parseInt(core.getInput('required-approvals'), 10);
-    if (isNaN(requiredApprovals) || requiredApprovals < 0) {
-        throw new Error(`Invalid required-approvals: "${core.getInput('required-approvals')}". Must be a non-negative integer.`);
-    }
     const updateTimeoutMinutes = parseInt(core.getInput('update-timeout-minutes'), 10);
     if (isNaN(updateTimeoutMinutes) || updateTimeoutMinutes <= 0) {
         throw new Error(`Invalid update-timeout-minutes: "${core.getInput('update-timeout-minutes')}". Must be a positive integer.`);
@@ -32870,7 +32865,6 @@ function getConfig() {
         processingLabel: core.getInput('processing-label'),
         updatingLabel: core.getInput('updating-label'),
         queuedLabel: core.getInput('queued-label'),
-        requiredApprovals,
         requireAllChecks: core.getInput('require-all-checks') === 'true',
         allowDraft: core.getInput('allow-draft') === 'true',
         blockLabels: core

@@ -86,7 +86,6 @@ Configure the queue behavior via workflow inputs:
 with:
   github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
   queue-label: 'ready'                # Label to trigger queue entry
-  required-approvals: 1               # Minimum required approvals
   merge-method: 'squash'              # merge, squash, or rebase
   auto-update-branch: true            # Auto-merge master when behind
   update-timeout-minutes: 30          # Max wait time for tests after update

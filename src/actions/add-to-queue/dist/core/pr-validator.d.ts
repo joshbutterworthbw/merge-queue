@@ -1,5 +1,10 @@
 /**
  * PR validation logic for merge queue
+ *
+ * Note: Approval requirements are intentionally NOT checked here.
+ * GitHub branch protection rules already enforce required approvals,
+ * and the merge API call will be rejected if they aren't met.
+ * Duplicating that check here just forces users to keep two configs in sync.
  */
 import { GitHubAPI } from './github-api';
 import { Logger } from '../utils/logger';
@@ -16,18 +21,6 @@ export declare class PRValidator {
      * Validate PR meets all merge requirements
      */
     validate(prNumber: number): Promise<ValidationResult>;
-    /**
-     * Check if PR has required approvals (public convenience method).
-     * Fetches reviews from the API and delegates to evaluateReviews.
-     */
-    checkApprovals(prNumber: number): Promise<boolean>;
-    /**
-     * Evaluate reviews to determine approval count and change-request status.
-     *
-     * Uses a non-mutating reverse so the original array is untouched.
-     * Iterates newest-first and keeps only the latest review per user.
-     */
-    private evaluateReviews;
     /**
      * Check if all required status checks pass.
      *

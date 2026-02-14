@@ -46,6 +46,7 @@ jobs:
       - uses: YOUR-ORG/merge-queue@v1/src/actions/add-to-queue
         with:
           github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
+          ignore-checks: 'Add PR to Merge Queue,Remove PR from Merge Queue,Process Merge Queue'
 ```
 
 **merge-queue-manager.yml**:
@@ -68,6 +69,7 @@ jobs:
         uses: YOUR-ORG/merge-queue@v1/src/actions/process-queue
         with:
           github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
+          ignore-checks: 'Add PR to Merge Queue,Remove PR from Merge Queue,Process Merge Queue'
       - name: Process next in queue
         if: steps.process.outputs.processed == 'true'
         env:
@@ -150,11 +152,13 @@ Comments on your PR show:
 - Verify `MERGE_QUEUE_TOKEN` exists
 - Ensure token has `repo` + `workflow` scopes
 
-**PR not merging**
+**PR not merging / "checks no longer passing"**
 - Check PR comments for details
 - Verify PR has required approvals
 - Ensure all checks are passing
 - Check for merge conflicts
+- If the failing check is a merge queue workflow itself (e.g. "Add PR to Merge Queue"),
+  add `ignore-checks` to your workflow inputs (see Customization below)
 
 **Permission errors**
 - Verify PAT has access to both repos
@@ -162,7 +166,7 @@ Comments on your PR show:
 
 ## Default Behavior
 
-- **Approvals**: 1 required
+- **Approvals**: Deferred to GitHub branch protection rules
 - **Checks**: All must pass
 - **Merge method**: Squash
 - **Branch delete**: Yes
@@ -175,11 +179,18 @@ Edit workflow files to customize:
 
 ```yaml
 with:
-  required-approvals: 2          # Change approval count
   merge-method: merge            # Use merge instead of squash
   delete-branch-after-merge: false  # Keep branches
   block-labels: do-not-merge,wip,draft  # Add blocking labels
+  ignore-checks: 'Add PR to Merge Queue,Remove PR from Merge Queue,Process Merge Queue'
 ```
+
+> **Important**: When `require-all-checks: true` (the default), the merge queue
+> validates that all CI checks on the PR pass. This includes the merge queue's
+> own workflow runs. Use `ignore-checks` to exclude those workflow job names so
+> they don't create a circular dependency where a previous failed run blocks the
+> PR from being re-queued. The values should match the `name:` of the jobs in
+> your workflow files.
 
 ## Next Steps
 

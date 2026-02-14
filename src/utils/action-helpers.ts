@@ -32,13 +32,6 @@ export function getConfig(): QueueConfig {
     );
   }
 
-  const requiredApprovals = parseInt(core.getInput('required-approvals'), 10);
-  if (isNaN(requiredApprovals) || requiredApprovals < 0) {
-    throw new Error(
-      `Invalid required-approvals: "${core.getInput('required-approvals')}". Must be a non-negative integer.`
-    );
-  }
-
   const updateTimeoutMinutes = parseInt(
     core.getInput('update-timeout-minutes'),
     10
@@ -56,7 +49,6 @@ export function getConfig(): QueueConfig {
     processingLabel: core.getInput('processing-label'),
     updatingLabel: core.getInput('updating-label'),
     queuedLabel: core.getInput('queued-label'),
-    requiredApprovals,
     requireAllChecks: core.getInput('require-all-checks') === 'true',
     allowDraft: core.getInput('allow-draft') === 'true',
     blockLabels: core

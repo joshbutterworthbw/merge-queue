@@ -98,7 +98,6 @@ The merge queue is a TypeScript-based GitHub Actions utility that automatically 
 2. queue-entry.yml workflow triggered
 3. add-to-queue action called
 4. PRValidator validates PR:
-   - Has required approvals?
    - All checks passing?
    - Not in draft state?
    - No blocking labels?

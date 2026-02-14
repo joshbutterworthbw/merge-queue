@@ -85,10 +85,6 @@ describe('PRValidator', () => {
         mergeable: false,
       } as any);
 
-      mockAPI.getPRReviews.mockResolvedValue([
-        { state: 'APPROVED', user: { login: 'user1' } },
-      ] as any);
-
       mockAPI.getCommitStatus.mockResolvedValue([
         { name: 'test', status: 'success' },
       ] as any);
@@ -110,10 +106,6 @@ describe('PRValidator', () => {
         mergeable: true,
       } as any);
 
-      mockAPI.getPRReviews.mockResolvedValue([
-        { state: 'APPROVED', user: { login: 'user1' } },
-      ] as any);
-
       mockAPI.getCommitStatus.mockResolvedValue([
         { name: 'test', status: 'success' },
       ] as any);
@@ -124,33 +116,8 @@ describe('PRValidator', () => {
 
       expect(result.valid).toBe(true);
       expect(result.checks).toBeDefined();
-      expect(result.checks?.hasApprovals).toBe(true);
       expect(result.checks?.checksPass).toBe(true);
       expect(result.checks?.noConflicts).toBe(true);
-    });
-  });
-
-  describe('checkApprovals', () => {
-    it('should count approvals correctly', async () => {
-      mockAPI.getPRReviews.mockResolvedValue([
-        { state: 'APPROVED', user: { login: 'user1' } },
-        { state: 'APPROVED', user: { login: 'user2' } },
-      ] as any);
-
-      const hasApprovals = await validator.checkApprovals(123);
-
-      expect(hasApprovals).toBe(true);
-    });
-
-    it('should reject when changes requested', async () => {
-      mockAPI.getPRReviews.mockResolvedValue([
-        { state: 'APPROVED', user: { login: 'user1' } },
-        { state: 'CHANGES_REQUESTED', user: { login: 'user2' } },
-      ] as any);
-
-      const hasApprovals = await validator.checkApprovals(123);
-
-      expect(hasApprovals).toBe(false);
     });
   });
 });

@@ -3,6 +3,9 @@ node_modules/
 
 # Build output
 dist/
+
+# But include action dist directories (required for GitHub Actions)
+!src/actions/*/dist/
 *.tsbuildinfo
 
 # Testing

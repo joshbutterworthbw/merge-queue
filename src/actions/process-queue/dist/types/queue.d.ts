@@ -42,6 +42,7 @@ export interface ValidationResult {
     valid: boolean;
     reason?: string;
     checks?: {
+        approved: boolean;
         checksPass: boolean;
         notDraft: boolean;
         noBlockLabels: boolean;

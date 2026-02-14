@@ -46,20 +46,61 @@ That's it for the merge-queue repo — no state branch or additional setup neede
 
 ## Part 2: Target Repository Setup
 
-### Step 1: Create Personal Access Token (PAT)
+### Step 1: Create a Bot User & Personal Access Token (PAT)
 
-1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+We recommend creating a **dedicated bot account** (e.g. `yourorg-merge-bot`)
+with **write** (not admin) collaborator access to the target repository.
+A non-admin account cannot bypass branch protection rules, providing an
+extra layer of safety alongside the merge queue's built-in approval checks.
 
-2. Click "Generate new token (classic)"
+#### Step 1a: Create the bot account
+
+1. Create a new GitHub account for the bot (e.g. `yourorg-merge-bot`)
+2. In the target repository: Settings → Collaborators → Add the bot with **Write** role
+
+#### Step 1b: Create a fine-grained PAT (Recommended)
+
+Log in as the bot account, then:
+
+1. Go to **Settings → Developer settings → Personal access tokens → Fine-grained tokens**
+
+2. Click **"Generate new token"**
 
 3. Configure the token:
+   - **Token name**: `Merge Queue Token`
+   - **Expiration**: 90 days or custom (set a calendar reminder to rotate)
+   - **Resource owner**: Your org or personal account
+   - **Repository access**: Select only the repositories that need the merge queue
+
+4. Under **Repository permissions**, set:
+
+   | Permission | Access | Why |
+   |---|---|---|
+   | **Pull requests** | Read & Write | Merge PRs, post comments, manage labels |
+   | **Contents** | Read & Write | Update branches, delete merged branches |
+   | **Actions** | Read & Write | Trigger workflow self-dispatch |
+   | **Commit statuses** | Read | Read CI status results for validation |
+   | **Metadata** | Read | Required by default |
+
+5. Click **"Generate token"** and **copy the token immediately** (you won't see it again)
+
+#### Alternative: Classic PAT
+
+If you can't use fine-grained tokens (e.g. org policy restrictions):
+
+1. Log in as the bot account
+2. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+3. Click "Generate new token (classic)"
+4. Configure the token:
    - **Note**: "Merge Queue Token"
    - **Expiration**: 90 days or custom (set calendar reminder)
    - **Scopes**:
      - ✅ `repo` (Full control of private repositories)
      - ✅ `workflow` (Update GitHub Actions workflows)
+5. Click "Generate token" and **copy the token immediately** (you won't see it again)
 
-4. Click "Generate token" and **copy the token immediately** (you won't see it again)
+> **Important**: Always use a non-admin bot account for the PAT. Admin tokens
+> can bypass GitHub branch protection rules at the API level.
 
 ### Step 2: Add Token as Secret
 
@@ -319,7 +360,8 @@ When new version is released:
 ## Best Practices
 
 1. **Token Security**
-   - Use PAT with minimal required scopes
+   - Use a dedicated bot account with **write** (not admin) access
+   - Use a fine-grained PAT scoped to only the required repositories and permissions
    - Set expiration and calendar reminders
    - Rotate regularly
    - Never commit tokens to git

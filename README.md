@@ -67,9 +67,20 @@ See the [examples/](examples/) directory for templates.
 
 ### 2. Configure GitHub Token
 
-Create a Personal Access Token (PAT) with the following permissions:
-- `repo` - Full repository access
-- `workflow` - Update GitHub Actions workflows
+Create a **dedicated bot account** (e.g. `yourorg-merge-bot`) with **write** (not admin) access to the repository, then create a fine-grained PAT from that account:
+
+| Permission | Access |
+|---|---|
+| Pull requests | Read & Write |
+| Contents | Read & Write |
+| Actions | Read & Write |
+| Commit statuses | Read |
+| Metadata | Read |
+
+> **Why a bot account?** A non-admin account cannot bypass branch protection rules
+> at the GitHub API level. The merge queue also enforces approvals at the application
+> level, providing defense in depth. See the [Setup Guide](docs/SETUP_GUIDE.md) for
+> detailed instructions.
 
 Add it as a secret in your repository:
 - Name: `MERGE_QUEUE_TOKEN`
@@ -200,7 +211,9 @@ Standard labels used by the queue:
 ## Security
 
 - Never commit tokens or secrets
-- Use minimal required permissions for PAT
+- Use a dedicated bot account with **write** (not admin) access — non-admin tokens cannot bypass branch protection
+- Use a fine-grained PAT with minimal required permissions, scoped to specific repositories
+- The merge queue always validates approvals at the application level (at least one approval, no outstanding changes requested)
 - Validate all inputs from GitHub events
 
 ## License

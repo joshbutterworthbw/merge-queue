@@ -9,12 +9,47 @@ Get your merge queue up and running in 15 minutes.
 
 ## 5-Minute Setup
 
-### 1. Create PAT (2 minutes)
+### 1. Create a Bot User & PAT (2 minutes)
+
+We recommend creating a dedicated bot account (e.g. `yourorg-merge-bot`) with
+**write** (not admin) collaborator access. A non-admin account cannot bypass
+branch protection rules, so required approvals and status checks are always
+enforced by GitHub in addition to the merge queue's own validation.
+
+**Create the bot user's fine-grained PAT:**
+
+1. Log in as the bot account
+2. Go to **Settings → Developer settings → Personal access tokens → Fine-grained tokens**
+3. Click **"Generate new token"**
+4. Configure:
+   - **Token name**: `Merge Queue Token`
+   - **Expiration**: 90 days (set a calendar reminder to rotate)
+   - **Resource owner**: Your org or personal account
+   - **Repository access**: Select only the repositories that need the merge queue
+5. Under **Repository permissions**, set:
+   | Permission | Access | Why |
+   |---|---|---|
+   | **Pull requests** | Read & Write | Merge PRs, post comments, manage labels |
+   | **Contents** | Read & Write | Update branches, delete merged branches |
+   | **Actions** | Read & Write | Trigger workflow self-dispatch |
+   | **Commit statuses** | Read | Read CI status results for validation |
+   | **Metadata** | Read | Required by default |
+6. Click **"Generate token"** and copy it immediately
+
+<details>
+<summary>Alternative: Classic PAT</summary>
+
+If you can't use fine-grained tokens (e.g. org policy restrictions):
 
 1. Go to https://github.com/settings/tokens
 2. Generate new token (classic)
 3. Check `repo` and `workflow` scopes
 4. Copy token
+
+> **Important**: Ensure the classic PAT belongs to a non-admin user (e.g. the bot
+> account above). Admin tokens can bypass branch protection rules.
+
+</details>
 
 ### 2. Add Secret (1 minute)
 
@@ -145,7 +180,7 @@ You can also check which PRs are queued by searching for the `queued-for-merge` 
 **Workflows don't run**
 - Check Actions tab for errors
 - Verify `MERGE_QUEUE_TOKEN` exists
-- Ensure token has `repo` + `workflow` scopes
+- Ensure token has the required permissions (see Step 1 above)
 
 **PR not merging / "checks no longer passing"**
 - Check PR comments for details
@@ -161,7 +196,7 @@ You can also check which PRs are queued by searching for the `queued-for-merge` 
 
 ## Default Behavior
 
-- **Approvals**: Deferred to GitHub branch protection rules
+- **Approvals**: At least one approval required, no outstanding changes requested
 - **Checks**: All must pass
 - **Merge method**: Squash
 - **Branch delete**: Yes
@@ -219,12 +254,15 @@ with:
 - **Manager**: After entry/remove workflows complete + self-dispatch while queue has items
 - **Remove**: When `ready` removed or PR closed
 
-### Required Permissions
+### Required Token Permissions (Fine-Grained PAT)
 
-- `repo` - Full repository access
-- `workflow` - Update workflows
-- `contents: write` - Merge PRs
-- `pull-requests: write` - Comment & label
+| Permission | Access |
+|---|---|
+| Pull requests | Read & Write |
+| Contents | Read & Write |
+| Actions | Read & Write |
+| Commit statuses | Read |
+| Metadata | Read |
 
 ---
 

@@ -1,10 +1,11 @@
 /**
  * PR validation logic for merge queue
  *
- * Note: Approval requirements are intentionally NOT checked here.
- * GitHub branch protection rules already enforce required approvals,
- * and the merge API call will be rejected if they aren't met.
- * Duplicating that check here just forces users to keep two configs in sync.
+ * Approval validation is always enforced — the validator requires at least
+ * one approving review with no outstanding "changes requested" reviews.
+ * This provides defense in depth: even if the PAT used by the merge queue
+ * has admin privileges that could bypass branch protection rules, the
+ * merge queue itself will refuse to merge unapproved PRs.
  */
 import { GitHubAPI } from './github-api';
 import { Logger } from '../utils/logger';
@@ -21,6 +22,16 @@ export declare class PRValidator {
      * Validate PR meets all merge requirements
      */
     validate(prNumber: number): Promise<ValidationResult>;
+    /**
+     * Check that the PR has at least one approving review and no outstanding
+     * "changes requested" reviews.  Only the latest review per reviewer is
+     * considered (a reviewer who requested changes and later approved counts
+     * as approved).
+     */
+    checkApproval(prNumber: number): Promise<{
+        valid: boolean;
+        reason?: string;
+    }>;
     /**
      * Check if all required status checks pass.
      *

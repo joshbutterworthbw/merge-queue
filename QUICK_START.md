@@ -52,10 +52,6 @@ jobs:
 ```yaml
 name: Merge Queue Manager
 on:
-  schedule:
-    - cron: '*/5 * * * *'
-  push:
-    branches: [main]
   workflow_run:
     workflows: ["Merge Queue Entry", "Merge Queue Remove"]
     types: [completed]
@@ -68,9 +64,15 @@ jobs:
   process-queue:
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR-ORG/merge-queue@v1/src/actions/process-queue
+      - id: process
+        uses: YOUR-ORG/merge-queue@v1/src/actions/process-queue
         with:
           github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
+      - name: Process next in queue
+        if: steps.process.outputs.processed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MERGE_QUEUE_TOKEN }}
+        run: gh workflow run "${{ github.workflow }}" --repo "${{ github.repository }}"
 ```
 
 **merge-queue-remove.yml**:
@@ -208,7 +210,7 @@ with:
 ### Workflow Triggers
 
 - **Entry**: When `ready` label added
-- **Manager**: Every 5 min + push to main
+- **Manager**: After entry/remove workflows complete + self-dispatch while queue has items
 - **Remove**: When `ready` removed or PR closed
 
 ### Required Permissions

@@ -190,45 +190,64 @@ export class GitHubAPI {
   }
 
   /**
-   * Update PR branch with base branch (merge base into head)
+   * Update PR branch with base branch using GitHub's dedicated update-branch API.
+   *
+   * Uses `PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch`
+   * which is the same mechanism as the "Update branch" button in the GitHub UI.
+   * This endpoint returns HTTP 202 (Accepted) because the merge happens
+   * asynchronously, so we poll the PR for the new head SHA afterwards.
    */
   async updateBranch(prNumber: number): Promise<UpdateResult> {
     this.logger.info('Updating PR branch with base', { prNumber });
 
     try {
       const pr = await this.getPullRequest(prNumber);
+      const previousSha = pr.head.sha;
 
-      // Merge base branch into PR branch
-      const { data: merge } = await this.octokit.rest.repos.merge({
-        owner: this.repo.owner,
-        repo: this.repo.repo,
-        base: pr.head.ref,
-        head: pr.base.ref,
-        commit_message: `Merge ${pr.base.ref} into ${pr.head.ref} (merge queue auto-update)`,
+      this.logger.debug('Current head SHA before update', {
+        prNumber,
+        sha: previousSha,
+        base: pr.base.ref,
+        head: pr.head.ref,
       });
 
-      if (!merge.sha) {
-        throw new Error('Merge did not return a commit SHA');
-      }
+      // Use GitHub's dedicated PR branch update API (same as "Update branch" button)
+      await this.octokit.rest.pulls.updateBranch({
+        owner: this.repo.owner,
+        repo: this.repo.repo,
+        pull_number: prNumber,
+        expected_head_sha: previousSha,
+      });
+
+      // The API returns 202 Accepted — the merge happens asynchronously.
+      // Poll until the head SHA changes to confirm the update completed.
+      const newSha = await this.waitForBranchUpdate(prNumber, previousSha);
 
       this.logger.info('Branch updated successfully', {
         prNumber,
-        sha: merge.sha,
+        previousSha,
+        sha: newSha,
       });
 
       return {
         success: true,
         conflict: false,
-        sha: merge.sha,
+        sha: newSha,
       };
     } catch (error: unknown) {
-      // Check if it's a merge conflict
+      const statusCode = isGitHubError(error) ? error.status : undefined;
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      // 409 or message containing "conflict" → merge conflict
       if (
         isGitHubError(error) &&
         (error.status === 409 || error.message?.includes('conflict'))
       ) {
         this.logger.warning('Merge conflict detected during branch update', {
           prNumber,
+          statusCode,
+          errorMessage,
         });
 
         return {
@@ -238,12 +257,71 @@ export class GitHubAPI {
         };
       }
 
+      // 422 Validation Failed — often indicates a merge conflict or
+      // that the branch cannot be updated (e.g. head SHA mismatch)
+      if (isGitHubError(error) && error.status === 422) {
+        this.logger.warning('Branch update validation failed', {
+          prNumber,
+          statusCode,
+          errorMessage,
+        });
+
+        return {
+          success: false,
+          conflict: errorMessage.toLowerCase().includes('conflict'),
+          error: `Branch update validation failed: ${errorMessage}`,
+        };
+      }
+
+      // Any other error — log full details for easier debugging
+      this.logger.error('Branch update failed', error as Error, {
+        prNumber,
+        statusCode,
+        errorMessage,
+      });
+
       throw new GitHubAPIError(
-        `Failed to update branch for PR #${prNumber}`,
-        isGitHubError(error) ? error.status : undefined,
+        `Failed to update branch for PR #${prNumber} (HTTP ${statusCode ?? 'unknown'}): ${errorMessage}`,
+        statusCode,
         error
       );
     }
+  }
+
+  /**
+   * Poll the PR until its head SHA changes, confirming the async branch
+   * update has completed.  Returns the new SHA.
+   */
+  private async waitForBranchUpdate(
+    prNumber: number,
+    previousSha: string,
+    maxAttempts: number = 10,
+    intervalMs: number = 3000
+  ): Promise<string> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
+
+      const pr = await this.getPullRequest(prNumber);
+      if (pr.head.sha !== previousSha) {
+        return pr.head.sha;
+      }
+
+      this.logger.debug('Waiting for branch update to complete', {
+        prNumber,
+        attempt,
+        maxAttempts,
+      });
+    }
+
+    // Final check
+    const pr = await this.getPullRequest(prNumber);
+    if (pr.head.sha !== previousSha) {
+      return pr.head.sha;
+    }
+
+    throw new Error(
+      `Branch update did not complete within ${(maxAttempts * intervalMs) / 1000}s for PR #${prNumber}`
+    );
   }
 
   /**

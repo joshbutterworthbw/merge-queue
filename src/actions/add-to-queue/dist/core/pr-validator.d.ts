@@ -29,7 +29,12 @@ export declare class PRValidator {
      */
     private evaluateReviews;
     /**
-     * Check if all required status checks pass
+     * Check if all required status checks pass.
+     *
+     * Checks whose name appears in `config.ignoreChecks` are excluded from
+     * evaluation.  This prevents the merge queue's own workflow checks from
+     * creating a circular dependency where a previous failed run blocks the
+     * PR from being re-queued.
      */
     checkStatusChecks(sha: string): Promise<{
         valid: boolean;

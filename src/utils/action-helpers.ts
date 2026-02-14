@@ -69,5 +69,10 @@ export function getConfig(): QueueConfig {
     mergeMethod: mergeMethod as MergeMethod,
     deleteBranchAfterMerge:
       core.getInput('delete-branch-after-merge') === 'true',
+    ignoreChecks: core
+      .getInput('ignore-checks')
+      .split(',')
+      .map(c => c.trim())
+      .filter(Boolean),
   };
 }

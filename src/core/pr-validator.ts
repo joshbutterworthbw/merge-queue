@@ -219,7 +219,12 @@ export class PRValidator {
   }
 
   /**
-   * Check if all required status checks pass
+   * Check if all required status checks pass.
+   *
+   * Checks whose name appears in `config.ignoreChecks` are excluded from
+   * evaluation.  This prevents the merge queue's own workflow checks from
+   * creating a circular dependency where a previous failed run blocks the
+   * PR from being re-queued.
    */
   async checkStatusChecks(
     sha: string
@@ -228,7 +233,25 @@ export class PRValidator {
       return { valid: true };
     }
 
-    const checks = await this.api.getCommitStatus(sha);
+    const allChecks = await this.api.getCommitStatus(sha);
+
+    // Exclude checks the user has explicitly asked to ignore
+    const ignored = this.config.ignoreChecks;
+    const checks =
+      ignored.length > 0
+        ? allChecks.filter(c => !ignored.includes(c.name))
+        : allChecks;
+
+    if (ignored.length > 0) {
+      const skipped = allChecks.length - checks.length;
+      if (skipped > 0) {
+        this.logger?.debug('Ignored checks during validation', {
+          sha,
+          skippedCount: skipped,
+          ignoredNames: ignored,
+        });
+      }
+    }
 
     // Filter for failed checks
     const failedChecks = checks.filter(

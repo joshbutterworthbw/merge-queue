@@ -30,6 +30,7 @@ export const DEFAULT_CONFIG = {
   updateTimeoutMinutes: 30,
   mergeMethod: 'squash' as const,
   deleteBranchAfterMerge: true,
+  ignoreChecks: [] as string[],
 };
 
 /**

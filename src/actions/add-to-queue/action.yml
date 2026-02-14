@@ -81,6 +81,11 @@ inputs:
     required: false
     default: 'do-not-merge,wip'
 
+  ignore-checks:
+    description: 'Comma-separated list of check names to ignore during validation (e.g. merge queue workflow checks)'
+    required: false
+    default: ''
+
   # Branch update configuration
   auto-update-branch:
     description: 'Automatically update branch when behind master'

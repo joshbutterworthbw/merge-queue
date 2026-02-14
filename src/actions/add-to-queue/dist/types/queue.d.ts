@@ -86,6 +86,7 @@ export interface QueueConfig {
     updateTimeoutMinutes: number;
     mergeMethod: MergeMethod;
     deleteBranchAfterMerge: boolean;
+    ignoreChecks: string[];
 }
 /**
  * PR validation result

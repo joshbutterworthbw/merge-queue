@@ -27,6 +27,7 @@ export declare const DEFAULT_CONFIG: {
     updateTimeoutMinutes: number;
     mergeMethod: "squash";
     deleteBranchAfterMerge: boolean;
+    ignoreChecks: string[];
 };
 /**
  * Retry configuration for API calls

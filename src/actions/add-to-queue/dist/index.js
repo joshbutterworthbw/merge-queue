@@ -32424,6 +32424,7 @@ const DEFAULT_CONFIG = {
     updateTimeoutMinutes: 30,
     mergeMethod: 'squash',
     deleteBranchAfterMerge: true,
+    ignoreChecks: [],
 };
 /**
  * Retry configuration for API calls
@@ -33004,13 +33005,33 @@ class PRValidator {
         return { approvalCount, hasChangeRequests };
     }
     /**
-     * Check if all required status checks pass
+     * Check if all required status checks pass.
+     *
+     * Checks whose name appears in `config.ignoreChecks` are excluded from
+     * evaluation.  This prevents the merge queue's own workflow checks from
+     * creating a circular dependency where a previous failed run blocks the
+     * PR from being re-queued.
      */
     async checkStatusChecks(sha) {
         if (!this.config.requireAllChecks) {
             return { valid: true };
         }
-        const checks = await this.api.getCommitStatus(sha);
+        const allChecks = await this.api.getCommitStatus(sha);
+        // Exclude checks the user has explicitly asked to ignore
+        const ignored = this.config.ignoreChecks;
+        const checks = ignored.length > 0
+            ? allChecks.filter(c => !ignored.includes(c.name))
+            : allChecks;
+        if (ignored.length > 0) {
+            const skipped = allChecks.length - checks.length;
+            if (skipped > 0) {
+                this.logger?.debug('Ignored checks during validation', {
+                    sha,
+                    skippedCount: skipped,
+                    ignoredNames: ignored,
+                });
+            }
+        }
         // Filter for failed checks
         const failedChecks = checks.filter(c => c.status === 'failure' || c.status === 'cancelled');
         if (failedChecks.length > 0) {
@@ -33088,6 +33109,10 @@ function getConfig() {
         updateTimeoutMinutes,
         mergeMethod: mergeMethod,
         deleteBranchAfterMerge: core.getInput('delete-branch-after-merge') === 'true',
+        ignoreChecks: core.getInput('ignore-checks')
+            .split(',')
+            .map(c => c.trim())
+            .filter(Boolean),
     };
 }
 

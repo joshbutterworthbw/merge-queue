@@ -32424,6 +32424,7 @@ const DEFAULT_CONFIG = {
     updateTimeoutMinutes: 30,
     mergeMethod: 'squash',
     deleteBranchAfterMerge: true,
+    ignoreChecks: [],
 };
 /**
  * Retry configuration for API calls
@@ -32874,6 +32875,11 @@ function getConfig() {
         updateTimeoutMinutes,
         mergeMethod: mergeMethod,
         deleteBranchAfterMerge: core.getInput('delete-branch-after-merge') === 'true',
+        ignoreChecks: core
+            .getInput('ignore-checks')
+            .split(',')
+            .map(c => c.trim())
+            .filter(Boolean),
     };
 }
 

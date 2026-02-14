@@ -195,10 +195,35 @@ Each repository has its own state file in the `merge-queue-state` branch:
 
 ### Concurrency Control
 
-- GitHub Actions concurrency groups prevent parallel processing
-- State updates use atomic operations with conflict detection
-- Retry logic with exponential backoff for transient failures
-- Force-with-lease git operations prevent state corruption
+The merge queue uses a **compare-and-swap (CAS)** strategy to safely handle
+concurrent state mutations (e.g. multiple PRs labeled "ready" at the same time).
+
+**How it works:**
+
+1. Every mutating operation (`addToQueue`, `removeFromQueue`, etc.) runs
+   inside `QueueStateManager.atomicUpdate()`.
+2. `atomicUpdate` reads the latest state from the `merge-queue-state` branch.
+3. The caller's mutation is applied to the in-memory state.
+4. The state is written back using GitHub's `createOrUpdateFileContents` API,
+   which requires the current file SHA — acting as an optimistic lock.
+5. If another process wrote to the state between step 2 and step 4, GitHub
+   returns a **409 Conflict**. The loop then re-reads the fresh state,
+   re-applies the mutation, and retries.
+6. Retries use **exponential backoff with jitter** (1 s, 2 s, 4 s, …) to
+   avoid thundering-herd collisions. Up to 5 retries are attempted before
+   raising a `ConcurrencyError`.
+
+**Why no workflow concurrency groups?**
+
+The add-to-queue and remove-from-queue workflows intentionally do **not** use
+GitHub Actions concurrency groups. GitHub only keeps one running + one pending
+job per group — any additional pending runs are silently cancelled. This meant
+labeling 3 PRs at once would drop at least one. The CAS retry loop makes
+concurrency groups unnecessary for correctness and avoids this limitation.
+
+The process-queue workflow still uses a concurrency group
+(`merge-queue-processor`) because only one PR should be processed at a time
+by design.
 
 ## Security Model
 
@@ -248,7 +273,7 @@ permissions:
 
 4. **Transient Errors** (API failures, network issues)
    - Retry with exponential backoff
-   - Up to 3 attempts
+   - Up to 5 attempts for state conflicts, 3 for API calls
    - If still failing, treat as validation failure
 
 5. **Timeouts** (Tests don't complete)

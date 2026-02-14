@@ -34,10 +34,6 @@ on:
   pull_request:
     types: [labeled]
 
-concurrency:
-  group: merge-queue-state-${{ github.repository }}
-  cancel-in-progress: false
-
 jobs:
   add-to-queue:
     if: github.event.label.name == 'ready'
@@ -83,10 +79,6 @@ name: Merge Queue Remove
 on:
   pull_request:
     types: [unlabeled, closed]
-
-concurrency:
-  group: merge-queue-state-${{ github.repository }}
-  cancel-in-progress: false
 
 jobs:
   remove-from-queue:

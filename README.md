@@ -177,7 +177,8 @@ Queue state is stored in the `merge-queue-state` branch with one file per reposi
 
 - Naming pattern: `{owner}-{repo}-queue.json`
 - Auto-created on first use
-- Atomic updates with conflict detection
+- Concurrency-safe via compare-and-swap (CAS) retry loop — multiple PRs can
+  be labeled "ready" simultaneously without losing any updates
 
 ## Error Handling
 

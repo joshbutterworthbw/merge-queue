@@ -301,11 +301,16 @@ priority: ${{ contains(github.event.pull_request.labels.*.name, 'urgent') && '10
 
 ### Issue: State file conflicts
 
-**Cause**: Concurrent updates (rare)
+**Cause**: Multiple PRs labeled "ready" at the same time trigger concurrent
+state writes.
 
 **Solution**:
-- Built-in retry logic should handle this
-- If persists, manually trigger queue-manager
+- The built-in compare-and-swap retry loop handles this automatically — on
+  conflict it re-reads the latest state and re-applies the change (up to 5
+  retries with exponential backoff)
+- If a `ConcurrencyError` still appears in logs, it means extremely high
+  contention; try staggering label additions slightly or manually trigger the
+  queue-manager workflow
 
 ### Issue: Tests timeout
 

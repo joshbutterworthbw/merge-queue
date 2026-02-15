@@ -80,6 +80,7 @@ describe('Action Helpers', () => {
       const defaults: Record<string, string> = {
         'merge-method': 'squash',
         'update-timeout-minutes': '30',
+        'max-update-retries': '3',
         'queue-label': 'ready',
         'failed-label': 'merge-queue-failed',
         'conflict-label': 'merge-queue-conflict',
@@ -109,6 +110,7 @@ describe('Action Helpers', () => {
 
       expect(config.mergeMethod).toBe('squash');
       expect(config.updateTimeoutMinutes).toBe(30);
+      expect(config.maxUpdateRetries).toBe(3);
       expect(config.queueLabel).toBe('ready');
       expect(config.failedLabel).toBe('merge-queue-failed');
       expect(config.conflictLabel).toBe('merge-queue-conflict');
@@ -146,6 +148,24 @@ describe('Action Helpers', () => {
       setInputs({ 'update-timeout-minutes': '0' });
 
       expect(() => getConfig()).toThrow('Invalid update-timeout-minutes');
+    });
+
+    it('should parse a valid max-update-retries', () => {
+      setInputs({ 'max-update-retries': '5' });
+
+      expect(getConfig().maxUpdateRetries).toBe(5);
+    });
+
+    it('should throw for non-numeric max-update-retries', () => {
+      setInputs({ 'max-update-retries': 'unlimited' });
+
+      expect(() => getConfig()).toThrow('Invalid max-update-retries');
+    });
+
+    it('should throw for zero max-update-retries', () => {
+      setInputs({ 'max-update-retries': '0' });
+
+      expect(() => getConfig()).toThrow('Invalid max-update-retries');
     });
 
     it('should parse boolean fields correctly', () => {

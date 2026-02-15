@@ -12,6 +12,7 @@
 
 import type { GitHubAPI } from '../github-api';
 import type { PRValidator } from '../pr-validator';
+import type { BranchUpdater } from '../branch-updater';
 import type { CheckStatus, UpdateResult } from '../../types/queue';
 
 /* ------------------------------------------------------------------ */
@@ -105,4 +106,35 @@ export function makeUpdateResult(overrides: Partial<UpdateResult> = {}): UpdateR
     conflict: false,
     ...overrides,
   };
+}
+
+/* ------------------------------------------------------------------ */
+/*  ProcessQueue partial mocks                                        */
+/* ------------------------------------------------------------------ */
+
+/** GitHubAPI methods used by processPR tests */
+export type ProcessQueueAPIMethods = Pick<
+  GitHubAPI,
+  | 'addLabels'
+  | 'removeLabel'
+  | 'getPullRequest'
+  | 'mergePullRequest'
+  | 'deleteBranch'
+  | 'addComment'
+>;
+
+/** PRValidator methods used by processPR tests */
+export type ProcessQueueValidatorMethods = Pick<PRValidator, 'validate' | 'isBehind'>;
+
+/** BranchUpdater methods used by processPR tests */
+export type ProcessQueueUpdaterMethods = Pick<BranchUpdater, 'updateIfBehind'>;
+
+export function createMockBranchUpdater<T extends Partial<BranchUpdater>>(
+  methods: (keyof T)[]
+): jest.Mocked<T> {
+  const mock: Record<string, jest.Mock> = {};
+  for (const m of methods) {
+    mock[m as string] = jest.fn();
+  }
+  return mock as jest.Mocked<T>;
 }

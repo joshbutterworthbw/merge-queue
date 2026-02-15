@@ -222,6 +222,44 @@ with:
 > PR from being re-queued. The values should match the `name:` of the jobs in
 > your workflow files.
 
+## Slack Notifications (Optional)
+
+Get Slack messages when PRs are merged or fail to merge, with rich formatting that includes the PR title, author, repository, and a direct link.
+
+### 1. Create a Slack Incoming Webhook
+
+1. Go to [https://api.slack.com/apps](https://api.slack.com/apps) and create a new app (or use an existing one)
+2. Under **Incoming Webhooks**, toggle it on
+3. Click **Add New Webhook to Workspace** and pick the channel to post to
+4. Copy the webhook URL (starts with `https://hooks.slack.com/services/...`)
+
+### 2. Add the Secret
+
+In your repository:
+1. Settings → Secrets → New secret
+2. Name: `SLACK_WEBHOOK_URL`
+3. Value: [paste webhook URL]
+
+### 3. Add the Notify Step
+
+Add this step to your `merge-queue-manager.yml` **after** the process step and **before** the self-dispatch step:
+
+```yaml
+- name: Notify Slack
+  if: steps.process.outputs.processed == 'true'
+  uses: YOUR-ORG/merge-queue@v1/src/actions/notify
+  with:
+    slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+    github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
+    repository: ${{ github.repository }}
+    pr-number: ${{ steps.process.outputs.pr-number }}
+    result: ${{ steps.process.outputs.result }}
+```
+
+Replace `YOUR-ORG` with your GitHub org/username.
+
+Notifications are sent for `merged`, `failed`, and `conflict` results. The notify step never fails the workflow — if Slack is unreachable, a warning is logged and the queue continues normally.
+
 ## Next Steps
 
 - Read [SETUP_GUIDE.md](docs/SETUP_GUIDE.md) for detailed setup

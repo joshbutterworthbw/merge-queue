@@ -192,14 +192,57 @@ describe('sendSlackNotification', () => {
       },
     })!;
 
-    await sendSlackNotification(
-      'https://hooks.slack.com/services/T00/B00/xxx',
-      payload
-    );
+    await sendSlackNotification('https://hooks.slack.com/services/T00/B00/xxx', payload);
 
     const callArgs = (global.fetch as jest.Mock).mock.calls[0];
     const body = JSON.parse(callArgs[1].body as string);
     expect(body.attachments).toBeDefined();
     expect(body.attachments[0].color).toBe('#2ea44f');
+  });
+
+  it('should return false on network error (never throws)', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+
+    const payload = buildSlackPayload({
+      result: 'merged',
+      pr: {
+        number: 4,
+        title: 'Network test',
+        author: 'user',
+        url: 'https://github.com/a/b/pull/4',
+        repository: 'a/b',
+      },
+    })!;
+
+    const result = await sendSlackNotification(
+      'https://hooks.slack.com/services/T00/B00/xxx',
+      payload
+    );
+
+    expect(result).toBe(false);
+  });
+
+  it('should return false on DNS resolution failure', async () => {
+    global.fetch = jest
+      .fn()
+      .mockRejectedValue(new TypeError('fetch failed: getaddrinfo ENOTFOUND hooks.slack.com'));
+
+    const payload = buildSlackPayload({
+      result: 'failed',
+      pr: {
+        number: 5,
+        title: 'DNS test',
+        author: 'user',
+        url: 'https://github.com/a/b/pull/5',
+        repository: 'a/b',
+      },
+    })!;
+
+    const result = await sendSlackNotification(
+      'https://hooks.slack.com/services/T00/B00/xxx',
+      payload
+    );
+
+    expect(result).toBe(false);
   });
 });

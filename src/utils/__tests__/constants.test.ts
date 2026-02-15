@@ -2,13 +2,7 @@
  * Tests for constants
  */
 
-import {
-  DEFAULT_CONFIG,
-  RETRY_CONFIG,
-  TIMEOUTS,
-  COMMENT_TEMPLATES,
-  LABEL_COLORS,
-} from '../constants';
+import { DEFAULT_CONFIG, TIMEOUTS, COMMENT_TEMPLATES, LABEL_COLORS } from '../constants';
 
 describe('Constants', () => {
   describe('DEFAULT_CONFIG', () => {
@@ -22,14 +16,6 @@ describe('Constants', () => {
       expect(DEFAULT_CONFIG.requireAllChecks).toBe(true);
       expect(DEFAULT_CONFIG.allowDraft).toBe(false);
       expect(DEFAULT_CONFIG.autoUpdateBranch).toBe(true);
-    });
-  });
-
-  describe('RETRY_CONFIG', () => {
-    it('should have retry settings', () => {
-      expect(RETRY_CONFIG.maxRetries).toBeGreaterThan(0);
-      expect(RETRY_CONFIG.initialDelayMs).toBeGreaterThan(0);
-      expect(RETRY_CONFIG.backoffMultiplier).toBeGreaterThan(1);
     });
   });
 

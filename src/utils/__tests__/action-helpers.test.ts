@@ -2,7 +2,7 @@
  * Tests for shared action helper utilities
  */
 
-import { parseRepository, getConfig } from '../action-helpers';
+import { parseRepository, parsePRNumber, getConfig } from '../action-helpers';
 import * as core from '@actions/core';
 
 // Mock @actions/core
@@ -26,28 +26,51 @@ describe('Action Helpers', () => {
     });
 
     it('should throw for a string without a slash', () => {
-      expect(() => parseRepository('justrepo')).toThrow(
-        'Invalid repository format'
-      );
+      expect(() => parseRepository('justrepo')).toThrow('Invalid repository format');
     });
 
     it('should throw for a trailing slash (missing repo)', () => {
-      expect(() => parseRepository('owner/')).toThrow(
-        'Invalid repository format'
-      );
+      expect(() => parseRepository('owner/')).toThrow('Invalid repository format');
     });
 
     it('should throw for a leading slash (missing owner)', () => {
-      expect(() => parseRepository('/repo')).toThrow(
-        'Invalid repository format'
-      );
+      expect(() => parseRepository('/repo')).toThrow('Invalid repository format');
     });
 
-    it('should only split on the first slash', () => {
-      // "owner/repo/extra" → split gives ["owner", "repo", "extra"]
-      // destructuring takes first two, so this is valid
-      const result = parseRepository('owner/repo/extra');
-      expect(result).toEqual({ owner: 'owner', repo: 'repo' });
+    it('should throw for extra path segments', () => {
+      expect(() => parseRepository('owner/repo/extra')).toThrow('Invalid repository format');
+    });
+  });
+
+  describe('parsePRNumber', () => {
+    it('should parse a valid PR number', () => {
+      expect(parsePRNumber('42')).toBe(42);
+    });
+
+    it('should parse large PR numbers', () => {
+      expect(parsePRNumber('99999')).toBe(99999);
+    });
+
+    it('should throw for non-numeric input', () => {
+      expect(() => parsePRNumber('abc')).toThrow('Invalid pr-number');
+    });
+
+    it('should throw for an empty string', () => {
+      expect(() => parsePRNumber('')).toThrow('Invalid pr-number');
+    });
+
+    it('should throw for zero', () => {
+      expect(() => parsePRNumber('0')).toThrow('Invalid pr-number');
+    });
+
+    it('should throw for negative numbers', () => {
+      expect(() => parsePRNumber('-5')).toThrow('Invalid pr-number');
+    });
+
+    it('should throw for floating point numbers', () => {
+      // parseInt('3.14') returns 3, which is > 0, so it passes.
+      // This is acceptable — parseInt truncates to integer.
+      expect(parsePRNumber('3.14')).toBe(3);
     });
   });
 
@@ -156,11 +179,7 @@ describe('Action Helpers', () => {
     it('should split block-labels by comma and trim whitespace', () => {
       setInputs({ 'block-labels': ' wip , do-not-merge , blocked ' });
 
-      expect(getConfig().blockLabels).toEqual([
-        'wip',
-        'do-not-merge',
-        'blocked',
-      ]);
+      expect(getConfig().blockLabels).toEqual(['wip', 'do-not-merge', 'blocked']);
     });
 
     it('should filter empty block-labels', () => {

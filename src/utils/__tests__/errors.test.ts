@@ -6,7 +6,6 @@ import {
   QueueError,
   ValidationError,
   GitHubAPIError,
-  MergeConflictError,
   TimeoutError,
   isGitHubError,
 } from '../errors';
@@ -51,15 +50,6 @@ describe('Custom Errors', () => {
       expect(error.message).toBe('API call failed');
       expect(error.statusCode).toBeUndefined();
       expect(error.response).toBeUndefined();
-    });
-  });
-
-  describe('MergeConflictError', () => {
-    it('should create a MergeConflictError', () => {
-      const error = new MergeConflictError('Merge conflict detected');
-      expect(error.message).toBe('Merge conflict detected');
-      expect(error.name).toBe('MergeConflictError');
-      expect(error).toBeInstanceOf(QueueError);
     });
   });
 

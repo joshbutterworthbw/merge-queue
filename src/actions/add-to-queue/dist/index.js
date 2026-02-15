@@ -32657,6 +32657,7 @@ const DEFAULT_CONFIG = {
     blockLabels: ['do-not-merge', 'wip'],
     autoUpdateBranch: true,
     updateTimeoutMinutes: 30,
+    maxUpdateRetries: 3,
     mergeMethod: 'squash',
     deleteBranchAfterMerge: true,
     ignoreChecks: [],
@@ -32745,6 +32746,10 @@ function getConfig() {
     if (isNaN(updateTimeoutMinutes) || updateTimeoutMinutes <= 0) {
         throw new Error(`Invalid update-timeout-minutes: "${core.getInput('update-timeout-minutes')}". Must be a positive integer.`);
     }
+    const maxUpdateRetries = parseInt(core.getInput('max-update-retries'), 10);
+    if (isNaN(maxUpdateRetries) || maxUpdateRetries <= 0) {
+        throw new Error(`Invalid max-update-retries: "${core.getInput('max-update-retries')}". Must be a positive integer.`);
+    }
     return {
         queueLabel: core.getInput('queue-label'),
         failedLabel: core.getInput('failed-label'),
@@ -32760,6 +32765,7 @@ function getConfig() {
             .filter(Boolean),
         autoUpdateBranch: core.getInput('auto-update-branch') === 'true',
         updateTimeoutMinutes,
+        maxUpdateRetries,
         mergeMethod: mergeMethod,
         deleteBranchAfterMerge: core.getInput('delete-branch-after-merge') === 'true',
         ignoreChecks: core.getInput('ignore-checks')

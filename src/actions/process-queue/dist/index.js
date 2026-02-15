@@ -31828,6 +31828,34 @@ module.exports = parseParams
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__nccwpck_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__nccwpck_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
@@ -31837,6 +31865,13 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be in strict mode.
 (() => {
 "use strict";
+// ESM COMPAT FLAG
+__nccwpck_require__.r(__webpack_exports__);
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  processPR: () => (/* binding */ processPR)
+});
 
 // EXTERNAL MODULE: ../../../node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(7930);
@@ -32657,6 +32692,7 @@ const DEFAULT_CONFIG = {
     blockLabels: ['do-not-merge', 'wip'],
     autoUpdateBranch: true,
     updateTimeoutMinutes: 30,
+    maxUpdateRetries: 3,
     mergeMethod: 'squash',
     deleteBranchAfterMerge: true,
     ignoreChecks: [],
@@ -32889,6 +32925,10 @@ function getConfig() {
     if (isNaN(updateTimeoutMinutes) || updateTimeoutMinutes <= 0) {
         throw new Error(`Invalid update-timeout-minutes: "${core.getInput('update-timeout-minutes')}". Must be a positive integer.`);
     }
+    const maxUpdateRetries = parseInt(core.getInput('max-update-retries'), 10);
+    if (isNaN(maxUpdateRetries) || maxUpdateRetries <= 0) {
+        throw new Error(`Invalid max-update-retries: "${core.getInput('max-update-retries')}". Must be a positive integer.`);
+    }
     return {
         queueLabel: core.getInput('queue-label'),
         failedLabel: core.getInput('failed-label'),
@@ -32904,6 +32944,7 @@ function getConfig() {
             .filter(Boolean),
         autoUpdateBranch: core.getInput('auto-update-branch') === 'true',
         updateTimeoutMinutes,
+        maxUpdateRetries,
         mergeMethod: mergeMethod,
         deleteBranchAfterMerge: core.getInput('delete-branch-after-merge') === 'true',
         ignoreChecks: core.getInput('ignore-checks')
@@ -32962,9 +33003,45 @@ async function processPR(api, validator, updater, prNumber, config, logger) {
             return result;
         }
         steps.push({ label: 'Validation passed', status: 'success' });
-        // Check if branch needs updating
-        if (validation.checks && !validation.checks.upToDate && config.autoUpdateBranch) {
-            logger.info('PR branch is behind, updating...', { prNumber });
+        // Check staleness and update branch in a retry loop.
+        // If the base branch advances while we wait for CI (e.g. someone manually
+        // merges another PR), we re-update and re-test before merging.
+        let isBehind = validation.checks?.upToDate === false;
+        let updateAttempts = 0;
+        if (!isBehind) {
+            steps.push({ label: 'Branch already up to date', status: 'success' });
+        }
+        while (isBehind && config.autoUpdateBranch) {
+            updateAttempts++;
+            if (updateAttempts > config.maxUpdateRetries) {
+                logger.warning('Exceeded max update retries — base branch keeps advancing', {
+                    prNumber,
+                    attempts: updateAttempts - 1,
+                    maxRetries: config.maxUpdateRetries,
+                });
+                steps.push({
+                    label: `Branch update retries exhausted (${config.maxUpdateRetries}/${config.maxUpdateRetries})`,
+                    status: 'failure',
+                    detail: 'The base branch kept advancing while waiting for CI. Please re-queue.',
+                });
+                await api.addLabels(prNumber, [config.failedLabel]);
+                await api.removeLabel(prNumber, config.processingLabel);
+                await api.removeLabel(prNumber, config.queueLabel);
+                result = 'failed';
+                return result;
+            }
+            if (updateAttempts > 1) {
+                logger.info('Base branch advanced during CI wait, re-updating...', {
+                    prNumber,
+                    attempt: updateAttempts,
+                    maxRetries: config.maxUpdateRetries,
+                });
+                steps.push({
+                    label: `Branch went stale, re-updating (attempt ${updateAttempts}/${config.maxUpdateRetries})`,
+                    status: 'success',
+                });
+            }
+            logger.info('PR branch is behind, updating...', { prNumber, attempt: updateAttempts });
             // Add updating label
             await api.addLabels(prNumber, [config.updatingLabel]);
             // Update the branch
@@ -33005,13 +33082,43 @@ async function processPR(api, validator, updater, prNumber, config, logger) {
             }
             logger.info('Branch updated and tests passed', { prNumber });
             steps.push({
-                label: 'Branch updated with latest master',
+                label: 'Branch updated with latest base',
                 status: 'success',
             });
             steps.push({ label: 'Tests passed after update', status: 'success' });
+            // Re-check staleness before proceeding to merge — the base branch
+            // may have advanced again while we were waiting for CI.
+            isBehind = await validator.isBehind(prNumber);
         }
-        else {
-            steps.push({ label: 'Branch already up to date', status: 'success' });
+        // If the branch is behind and auto-update is disabled, we cannot merge safely.
+        if (isBehind && !config.autoUpdateBranch) {
+            logger.warning('Branch is behind base and auto-update is disabled', { prNumber });
+            steps.push({
+                label: 'Branch is behind base branch',
+                status: 'failure',
+                detail: 'Auto-update is disabled. Please update the branch manually and re-queue.',
+            });
+            await api.addLabels(prNumber, [config.failedLabel]);
+            await api.removeLabel(prNumber, config.processingLabel);
+            await api.removeLabel(prNumber, config.queueLabel);
+            result = 'failed';
+            return result;
+        }
+        // Final staleness gate — catches the case where the branch was initially
+        // up-to-date but main advanced before we reached the merge call.
+        const finalBehindCheck = await validator.isBehind(prNumber);
+        if (finalBehindCheck) {
+            logger.warning('Branch became stale just before merge', { prNumber });
+            steps.push({
+                label: 'Branch became stale before merge — base branch advanced',
+                status: 'failure',
+                detail: 'The base branch advanced after validation. Please re-queue.',
+            });
+            await api.addLabels(prNumber, [config.failedLabel]);
+            await api.removeLabel(prNumber, config.processingLabel);
+            await api.removeLabel(prNumber, config.queueLabel);
+            result = 'failed';
+            return result;
         }
         // Merge the PR
         logger.info('Merging PR', { prNumber, method: config.mergeMethod });

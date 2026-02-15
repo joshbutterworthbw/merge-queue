@@ -31,6 +31,7 @@ export interface QueueConfig {
     blockLabels: string[];
     autoUpdateBranch: boolean;
     updateTimeoutMinutes: number;
+    maxUpdateRetries: number;
     mergeMethod: MergeMethod;
     deleteBranchAfterMerge: boolean;
     ignoreChecks: string[];

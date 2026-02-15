@@ -18,6 +18,7 @@ export declare const DEFAULT_CONFIG: {
     blockLabels: string[];
     autoUpdateBranch: boolean;
     updateTimeoutMinutes: number;
+    maxUpdateRetries: number;
     mergeMethod: "squash";
     deleteBranchAfterMerge: boolean;
     ignoreChecks: string[];

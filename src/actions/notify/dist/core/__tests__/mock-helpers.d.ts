@@ -11,6 +11,7 @@
  */
 import type { GitHubAPI } from '../github-api';
 import type { PRValidator } from '../pr-validator';
+import type { BranchUpdater } from '../branch-updater';
 import type { CheckStatus, UpdateResult } from '../../types/queue';
 /** Methods used by BranchUpdater tests */
 export type BranchUpdaterAPIMethods = Pick<GitHubAPI, 'updateBranch' | 'getPullRequest' | 'getCommitStatus'>;
@@ -46,4 +47,11 @@ export interface PRFixture {
 export declare function makePR(overrides?: Partial<PRFixture>): PRFixture;
 export declare function makeCheck(name: string, status: CheckStatus['status']): CheckStatus;
 export declare function makeUpdateResult(overrides?: Partial<UpdateResult>): UpdateResult;
+/** GitHubAPI methods used by processPR tests */
+export type ProcessQueueAPIMethods = Pick<GitHubAPI, 'addLabels' | 'removeLabel' | 'getPullRequest' | 'mergePullRequest' | 'deleteBranch' | 'addComment'>;
+/** PRValidator methods used by processPR tests */
+export type ProcessQueueValidatorMethods = Pick<PRValidator, 'validate' | 'isBehind'>;
+/** BranchUpdater methods used by processPR tests */
+export type ProcessQueueUpdaterMethods = Pick<BranchUpdater, 'updateIfBehind'>;
+export declare function createMockBranchUpdater<T extends Partial<BranchUpdater>>(methods: (keyof T)[]): jest.Mocked<T>;
 //# sourceMappingURL=mock-helpers.d.ts.map

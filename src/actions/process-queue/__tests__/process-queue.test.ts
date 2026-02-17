@@ -74,14 +74,9 @@ describe('processPR', () => {
       'addComment',
     ]);
 
-    mockValidator = createMockValidator<ProcessQueueValidatorMethods>([
-      'validate',
-      'isBehind',
-    ]);
+    mockValidator = createMockValidator<ProcessQueueValidatorMethods>(['validate', 'isBehind']);
 
-    mockUpdater = createMockBranchUpdater<ProcessQueueUpdaterMethods>([
-      'updateIfBehind',
-    ]);
+    mockUpdater = createMockBranchUpdater<ProcessQueueUpdaterMethods>(['updateIfBehind']);
 
     logger = createSilentLogger();
 
@@ -89,7 +84,9 @@ describe('processPR', () => {
     mockAPI.addLabels.mockResolvedValue(undefined as never);
     mockAPI.removeLabel.mockResolvedValue(undefined as never);
     mockAPI.addComment.mockResolvedValue(undefined as never);
-    mockAPI.getPullRequest.mockResolvedValue(makePR({ head: { sha: 'abc123', ref: 'feature' } }) as never);
+    mockAPI.getPullRequest.mockResolvedValue(
+      makePR({ head: { sha: 'abc123', ref: 'feature' } }) as never
+    );
     mockAPI.mergePullRequest.mockResolvedValue('merge-sha' as never);
     mockAPI.deleteBranch.mockResolvedValue(undefined as never);
   });
@@ -116,7 +113,8 @@ describe('processPR', () => {
     mockValidator.validate.mockResolvedValue(makeValidation({ upToDate: false }) as never);
     mockUpdater.updateIfBehind.mockResolvedValue(makeUpdateResult({ sha: 'new-sha' }) as never);
     // After first update, branch is up to date
-    mockValidator.isBehind.mockResolvedValueOnce(false as never) // post-update re-check
+    mockValidator.isBehind
+      .mockResolvedValueOnce(false as never) // post-update re-check
       .mockResolvedValueOnce(false as never); // final staleness gate
 
     const result = await processPR(
@@ -141,8 +139,8 @@ describe('processPR', () => {
     // Second post-update check: up to date
     // Final staleness gate: up to date
     mockValidator.isBehind
-      .mockResolvedValueOnce(true as never)   // after 1st update — stale again
-      .mockResolvedValueOnce(false as never)  // after 2nd update — good
+      .mockResolvedValueOnce(true as never) // after 1st update — stale again
+      .mockResolvedValueOnce(false as never) // after 2nd update — good
       .mockResolvedValueOnce(false as never); // final gate
 
     const result = await processPR(
@@ -190,7 +188,9 @@ describe('processPR', () => {
     // First update succeeds but base advances; second update hits conflict
     mockUpdater.updateIfBehind
       .mockResolvedValueOnce(makeUpdateResult({ sha: 'new-sha' }) as never)
-      .mockResolvedValueOnce(makeUpdateResult({ success: false, conflict: true, error: 'Merge conflict' }) as never);
+      .mockResolvedValueOnce(
+        makeUpdateResult({ success: false, conflict: true, error: 'Merge conflict' }) as never
+      );
 
     // After first update, branch is stale again
     mockValidator.isBehind.mockResolvedValueOnce(true as never);

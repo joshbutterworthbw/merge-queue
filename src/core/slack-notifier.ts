@@ -156,7 +156,7 @@ export function buildSlackPayload(params: SlackNotificationParams): SlackPayload
           text: `Merge Queue | ${new Date().toISOString()}`,
         },
       ],
-    },
+    }
   );
 
   return {

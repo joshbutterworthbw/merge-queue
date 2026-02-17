@@ -121,14 +121,14 @@ Follow an atomic commit pattern. Every commit must be a single, self-contained, 
 1. **One concern per commit** -- Do not mix unrelated changes. A bug fix, a new feature, a refactor, and a formatting change are four separate commits.
 2. **Each commit must build and pass tests** -- Never commit code that breaks the build or fails existing tests. Run `npm run build` and `npm test` before committing.
 3. **Format code before committing** -- Always run `npm run format` before committing to ensure all code is formatted consistently with Prettier. Never commit code that fails `npm run format:check`.
-3. **Each commit must be revertable** -- It should be safe to `git revert` any single commit without unintended side effects on unrelated functionality.
-4. **Order commits logically** -- When a task requires multiple commits, order them so each builds on the last:
+4. **Each commit must be revertable** -- It should be safe to `git revert` any single commit without unintended side effects on unrelated functionality.
+5. **Order commits logically** -- When a task requires multiple commits, order them so each builds on the last:
    - Types/interfaces first
    - Core logic second
    - Tests third
    - Documentation last
-5. **Keep commits small** -- If a commit diff is large, look for ways to decompose it. Smaller commits are easier to review, bisect, and revert.
-6. **Commit messages must be descriptive** -- Use conventional commit format (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`). The message should explain *why* the change was made, not just *what* changed.
+6. **Keep commits small** -- If a commit diff is large, look for ways to decompose it. Smaller commits are easier to review, bisect, and revert.
+7. **Commit messages must be descriptive** -- Use conventional commit format (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`). The message should explain *why* the change was made, not just *what* changed.
 
 **Examples of good atomic commits:**
 

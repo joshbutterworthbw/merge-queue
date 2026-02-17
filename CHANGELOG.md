@@ -70,7 +70,7 @@ When upgrading between versions:
 1. Check CHANGELOG for breaking changes
 2. Update action references in target repositories:
    ```yaml
-   uses: your-org/merge-queue@vX.Y.Z/src/actions/add-to-queue
+   uses: BloomAndWild/merge-queue@vX.Y.Z/src/actions/add-to-queue
    ```
 3. Review and update workflow configurations if needed
 4. Test with a non-critical PR first
@@ -83,5 +83,5 @@ When upgrading between versions:
 
 ---
 
-[Unreleased]: https://github.com/your-org/merge-queue/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/your-org/merge-queue/releases/tag/v0.1.0
+[Unreleased]: https://github.com/BloomAndWild/merge-queue/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/BloomAndWild/merge-queue/releases/tag/v0.1.0

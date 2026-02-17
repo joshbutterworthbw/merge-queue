@@ -22,7 +22,7 @@ If you haven't already:
 2. Push the merge-queue code:
    ```bash
    cd /path/to/merge-queue
-   git remote add origin git@github.com:your-org/merge-queue.git
+   git remote add origin git@github.com:BloomAndWild/merge-queue.git
    git push -u origin main
    ```
 
@@ -130,9 +130,9 @@ In your target repository:
    cd .github/workflows/
 
    # Download workflow files
-   curl -O https://raw.githubusercontent.com/your-org/merge-queue/main/examples/target-repo-workflows/merge-queue-entry.yml
-   curl -O https://raw.githubusercontent.com/your-org/merge-queue/main/examples/target-repo-workflows/merge-queue-manager.yml
-   curl -O https://raw.githubusercontent.com/your-org/merge-queue/main/examples/target-repo-workflows/merge-queue-remove.yml
+   curl -O https://raw.githubusercontent.com/BloomAndWild/merge-queue/main/examples/target-repo-workflows/merge-queue-entry.yml
+   curl -O https://raw.githubusercontent.com/BloomAndWild/merge-queue/main/examples/target-repo-workflows/merge-queue-manager.yml
+   curl -O https://raw.githubusercontent.com/BloomAndWild/merge-queue/main/examples/target-repo-workflows/merge-queue-remove.yml
    ```
 
    **Option B: Manual copy**
@@ -141,11 +141,11 @@ In your target repository:
 
 3. Update the workflow files:
 
-   Find and replace `your-org` with your GitHub organization/username:
+   Find and replace `BloomAndWild` with your GitHub organization/username:
 
    ```yaml
    # Before
-   uses: your-org/merge-queue@v1/src/actions/add-to-queue
+   uses: BloomAndWild/merge-queue@v1/src/actions/add-to-queue
 
    # After
    uses: mycompany/merge-queue@v1/src/actions/add-to-queue
@@ -360,10 +360,10 @@ When new version is released:
 3. Update workflow files in target repos:
    ```yaml
    # Change from
-   uses: your-org/merge-queue@v1.0.0/src/actions/add-to-queue
+   uses: BloomAndWild/merge-queue@v1.0.0/src/actions/add-to-queue
 
    # To
-   uses: your-org/merge-queue@v1.1.0/src/actions/add-to-queue
+   uses: BloomAndWild/merge-queue@v1.1.0/src/actions/add-to-queue
    ```
 
 ## Best Practices

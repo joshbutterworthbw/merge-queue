@@ -75,7 +75,7 @@ jobs:
     if: github.event.label.name == (vars.MERGE_QUEUE_LABEL || 'ready')
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR-ORG/merge-queue@v1/src/actions/add-to-queue
+      - uses: BloomAndWild/merge-queue@v1/src/actions/add-to-queue
         with:
           github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
           queue-label: ${{ vars.MERGE_QUEUE_LABEL || 'ready' }}
@@ -100,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: process
-        uses: YOUR-ORG/merge-queue@v1/src/actions/process-queue
+        uses: BloomAndWild/merge-queue@v1/src/actions/process-queue
         with:
           github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
           queue-label: ${{ vars.MERGE_QUEUE_LABEL || 'ready' }}
@@ -126,12 +126,12 @@ jobs:
       github.event.action == 'closed'
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR-ORG/merge-queue@v1/src/actions/remove-from-queue
+      - uses: BloomAndWild/merge-queue@v1/src/actions/remove-from-queue
         with:
           github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
 ```
 
-Replace `YOUR-ORG` with your GitHub org/username.
+Replace `BloomAndWild` with your GitHub org/username.
 
 ### 4. Create Labels (2 minutes)
 
@@ -263,7 +263,7 @@ Add this step to your `merge-queue-manager.yml` **after** the process step and *
 ```yaml
 - name: Notify Slack
   if: steps.process.outputs.processed == 'true'
-  uses: YOUR-ORG/merge-queue@v1/src/actions/notify
+  uses: BloomAndWild/merge-queue@v1/src/actions/notify
   with:
     slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
     github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
@@ -272,7 +272,7 @@ Add this step to your `merge-queue-manager.yml` **after** the process step and *
     result: ${{ steps.process.outputs.result }}
 ```
 
-Replace `YOUR-ORG` with your GitHub org/username.
+Replace `BloomAndWild` with your GitHub org/username.
 
 Notifications are sent for `merged`, `failed`, and `conflict` results. The notify step never fails the workflow — if Slack is unreachable, a warning is logged and the queue continues normally.
 
@@ -286,8 +286,8 @@ Notifications are sent for `merged`, `failed`, and `conflict` results. The notif
 ## Support
 
 - [Full Documentation](README.md)
-- [Report Issues](https://github.com/YOUR-ORG/merge-queue/issues)
-- [Discussions](https://github.com/YOUR-ORG/merge-queue/discussions)
+- [Report Issues](https://github.com/BloomAndWild/merge-queue/issues)
+- [Discussions](https://github.com/BloomAndWild/merge-queue/discussions)
 
 ## Quick Reference
 

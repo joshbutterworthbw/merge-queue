@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Remove from merge queue
-        uses: your-org/merge-queue@v1/src/actions/remove-from-queue
+        uses: BloomAndWild/merge-queue@v1/src/actions/remove-from-queue
         with:
           # Authentication
           github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}

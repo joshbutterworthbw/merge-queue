@@ -189,7 +189,7 @@ there is no build step at runtime. If the dist files are stale, consumers run ol
 Target repositories reference actions like:
 
 ```yaml
-uses: your-org/merge-queue/src/actions/add-to-queue@v1
+uses: BloomAndWild/merge-queue/src/actions/add-to-queue@v1
 ```
 
 ## Error Handling

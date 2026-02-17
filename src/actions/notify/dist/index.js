@@ -32424,6 +32424,7 @@ const RESULT_COLOURS = {
     merged: '#2ea44f',
     failed: '#d73a4a',
     conflict: '#b60205',
+    rejected: '#e36209',
 };
 /**
  * Human-readable header text per result type
@@ -32432,6 +32433,7 @@ const RESULT_HEADERS = {
     merged: 'PR Merged Successfully',
     failed: 'PR Failed to Merge',
     conflict: 'PR Has Merge Conflicts',
+    rejected: 'PR Rejected from Queue',
 };
 /**
  * Icon per result type
@@ -32440,6 +32442,7 @@ const RESULT_ICONS = {
     merged: ':white_check_mark:',
     failed: ':x:',
     conflict: ':warning:',
+    rejected: ':no_entry:',
 };
 /**
  * Build a Slack Block Kit payload for a merge queue event.
@@ -32448,7 +32451,7 @@ const RESULT_ICONS = {
  * (e.g. `none`, `removed`).
  */
 function buildSlackPayload(params) {
-    const { result, pr } = params;
+    const { result, pr, reason } = params;
     const color = RESULT_COLOURS[result];
     if (!color) {
         // Result type is not notification-worthy (e.g. 'none', 'removed')
@@ -32477,26 +32480,34 @@ function buildSlackPayload(params) {
                 text: ' ',
             },
         },
-        {
-            type: 'actions',
-            elements: [
-                {
-                    type: 'button',
-                    text: { type: 'plain_text', text: 'View Pull Request' },
-                    url: pr.url,
-                },
-            ],
-        },
-        {
-            type: 'context',
-            elements: [
-                {
-                    type: 'mrkdwn',
-                    text: `Merge Queue | ${new Date().toISOString()}`,
-                },
-            ],
-        },
     ];
+    if (reason) {
+        blocks.push({
+            type: 'section',
+            text: {
+                type: 'mrkdwn',
+                text: `*Reason:*\n${reason}`,
+            },
+        });
+    }
+    blocks.push({
+        type: 'actions',
+        elements: [
+            {
+                type: 'button',
+                text: { type: 'plain_text', text: 'View Pull Request' },
+                url: pr.url,
+            },
+        ],
+    }, {
+        type: 'context',
+        elements: [
+            {
+                type: 'mrkdwn',
+                text: `Merge Queue | ${new Date().toISOString()}`,
+            },
+        ],
+    });
     return {
         attachments: [{ color, blocks, fallback }],
     };
@@ -32576,7 +32587,7 @@ function getConfig() {
         processingLabel: core.getInput('processing-label'),
         updatingLabel: core.getInput('updating-label'),
         queuedLabel: core.getInput('queued-label'),
-        requireAllChecks: core.getInput('require-all-checks') === 'true',
+        allowPendingChecks: core.getInput('allow-pending-checks') === 'true',
         allowDraft: core.getInput('allow-draft') === 'true',
         blockLabels: core
             .getInput('block-labels')
@@ -32612,7 +32623,7 @@ function getConfig() {
 
 
 
-const VALID_RESULTS = ['merged', 'failed', 'conflict', 'removed'];
+const VALID_RESULTS = ['merged', 'failed', 'conflict', 'removed', 'rejected'];
 /**
  * Main action logic
  */
@@ -32623,6 +32634,7 @@ async function run() {
         const targetRepo = parseRepository(lib_core.getInput('repository'));
         const prNumber = parsePRNumber(lib_core.getInput('pr-number'));
         const result = lib_core.getInput('result');
+        const reason = lib_core.getInput('reason') || undefined;
         const logger = createLogger({
             action: 'notify',
             repo: `${targetRepo.owner}/${targetRepo.repo}`,
@@ -32640,6 +32652,7 @@ async function run() {
         const payloadCheck = buildSlackPayload({
             result,
             pr: { number: prNumber, title: '', author: '', url: '', repository: '' },
+            reason,
         });
         if (!payloadCheck) {
             logger.info('Skipping notification — result type not notifiable', {
@@ -32661,6 +32674,7 @@ async function run() {
                 url: pr.html_url,
                 repository: `${targetRepo.owner}/${targetRepo.repo}`,
             },
+            reason,
         });
         if (!payload) {
             // Shouldn't happen given the check above, but guard defensively

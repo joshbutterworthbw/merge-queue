@@ -13,7 +13,7 @@ export declare const DEFAULT_CONFIG: {
     processingLabel: string;
     updatingLabel: string;
     queuedLabel: string;
-    requireAllChecks: boolean;
+    allowPendingChecks: boolean;
     allowDraft: boolean;
     blockLabels: string[];
     autoUpdateBranch: boolean;

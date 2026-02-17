@@ -32630,9 +32630,6 @@ class PRValidator {
      * PR from being re-queued.
      */
     async checkStatusChecks(sha) {
-        if (!this.config.requireAllChecks) {
-            return { valid: true };
-        }
         const allChecks = await this.api.getCommitStatus(sha);
         // Exclude checks the user has explicitly asked to ignore
         const ignored = this.config.ignoreChecks;
@@ -32656,12 +32653,14 @@ class PRValidator {
             };
         }
         // Filter for pending checks
-        const pendingChecks = checks.filter(c => c.status === 'pending');
-        if (pendingChecks.length > 0) {
-            return {
-                valid: false,
-                reason: `Pending checks: ${pendingChecks.map(c => c.name).join(', ')}`,
-            };
+        if (!this.config.allowPendingChecks) {
+            const pendingChecks = checks.filter(c => c.status === 'pending');
+            if (pendingChecks.length > 0) {
+                return {
+                    valid: false,
+                    reason: `Pending checks: ${pendingChecks.map(c => c.name).join(', ')}`,
+                };
+            }
         }
         return { valid: true };
     }
@@ -32687,7 +32686,7 @@ const DEFAULT_CONFIG = {
     processingLabel: 'merge-processing',
     updatingLabel: 'merge-updating',
     queuedLabel: 'queued-for-merge',
-    requireAllChecks: true,
+    allowPendingChecks: false,
     allowDraft: false,
     blockLabels: ['do-not-merge', 'wip'],
     autoUpdateBranch: true,
@@ -32936,7 +32935,7 @@ function getConfig() {
         processingLabel: core.getInput('processing-label'),
         updatingLabel: core.getInput('updating-label'),
         queuedLabel: core.getInput('queued-label'),
-        requireAllChecks: core.getInput('require-all-checks') === 'true',
+        allowPendingChecks: core.getInput('allow-pending-checks') === 'true',
         allowDraft: core.getInput('allow-draft') === 'true',
         blockLabels: core.getInput('block-labels')
             .split(',')

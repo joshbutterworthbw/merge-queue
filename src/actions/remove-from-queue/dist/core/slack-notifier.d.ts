@@ -21,6 +21,7 @@ export interface PRDetails {
 export interface SlackNotificationParams {
     result: MergeResult;
     pr: PRDetails;
+    reason?: string;
 }
 /**
  * Slack Block Kit payload shape (subset relevant to incoming webhooks)

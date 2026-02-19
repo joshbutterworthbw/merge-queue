@@ -108,7 +108,7 @@ In each target repository:
 
 ### Step 2: Add Workflow Files
 
-Copy the example workflows from `examples/target-repo-workflows-github-app/`.
+Copy the example workflows from `examples/target-repo-workflows/`.
 
 1. Create `.github/workflows/` directory if it doesn't exist:
    ```bash
@@ -120,7 +120,7 @@ Copy the example workflows from `examples/target-repo-workflows-github-app/`.
    **Using curl**
    ```bash
    cd .github/workflows/
-   BASE=https://raw.githubusercontent.com/BloomAndWild/merge-queue/main/examples/target-repo-workflows-github-app
+   BASE=https://raw.githubusercontent.com/BloomAndWild/merge-queue/main/examples/target-repo-workflows
 
    curl -O "$BASE/merge-queue-entry.yml"
    curl -O "$BASE/merge-queue-manager.yml"
@@ -128,7 +128,7 @@ Copy the example workflows from `examples/target-repo-workflows-github-app/`.
    ```
 
    **Manual copy**
-   - Copy files from `examples/target-repo-workflows-github-app/`
+   - Copy files from `examples/target-repo-workflows/`
    - Paste into your repo's `.github/workflows/`
 
 3. Update the workflow files:

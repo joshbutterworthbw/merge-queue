@@ -17,11 +17,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.MERGE_QUEUE_APP_ID }}
+          private-key: ${{ secrets.MERGE_QUEUE_APP_PRIVATE_KEY }}
+
       - name: Remove from merge queue
         uses: BloomAndWild/merge-queue@v1/src/actions/remove-from-queue
         with:
-          # Authentication
-          github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
+          # Authentication (GitHub App installation token)
+          github-token: ${{ steps.app-token.outputs.token }}
 
           # Repository info (auto-detected)
           repository: ${{ github.repository }}

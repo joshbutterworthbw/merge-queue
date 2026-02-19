@@ -81,7 +81,7 @@ Copy these three workflow files to your repository's `.github/workflows/` direct
 - `merge-queue-manager.yml` - Triggered after entry/remove workflows + self-dispatch
 - `merge-queue-remove.yml` - Triggered when label is removed or PR is closed
 
-See [examples/target-repo-workflows-github-app/](examples/target-repo-workflows-github-app/) for templates.
+See [examples/target-repo-workflows/](examples/target-repo-workflows/) for templates.
 
 ### 3. Add the Trigger Label
 

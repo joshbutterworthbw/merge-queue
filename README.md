@@ -76,6 +76,7 @@ Both methods require the same repository permissions:
 | Contents | Read & Write |
 | Actions | Read & Write |
 | Commit statuses | Read |
+| Checks | Read |
 | Metadata | Read |
 
 See the [Setup Guide](docs/SETUP_GUIDE.md) for detailed step-by-step

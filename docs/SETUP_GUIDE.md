@@ -145,6 +145,7 @@ Log in as the bot account, then:
    | **Contents** | Read & Write | Update branches, delete merged branches |
    | **Actions** | Read & Write | Trigger workflow self-dispatch |
    | **Commit statuses** | Read | Read CI status results for validation |
+   | **Checks** | Read | Read check run results for validation |
    | **Metadata** | Read | Required by default |
 
 5. Click **"Generate token"** and **copy the token immediately** (you won't see it again)

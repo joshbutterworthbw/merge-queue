@@ -9,12 +9,37 @@ Get your merge queue up and running in 15 minutes.
 
 ## 5-Minute Setup
 
-### 1. Create a Bot User & PAT (2 minutes)
+### 1. Set Up Authentication (2 minutes)
 
-We recommend creating a dedicated bot account (e.g. `yourorg-merge-bot`) with
-**write** (not admin) collaborator access. A non-admin account cannot bypass
-branch protection rules, so required approvals and status checks are always
-enforced by GitHub in addition to the merge queue's own validation.
+Choose **one** of the two options below. A GitHub App is recommended because
+tokens are generated automatically on each run — no expiration, no rotation.
+
+#### Option A: GitHub App (Recommended)
+
+1. Go to your **org settings** → Developer settings → GitHub Apps → **New GitHub App**
+2. Set **Webhook** to inactive (not needed)
+3. Under **Repository permissions**, set:
+   | Permission | Access |
+   |---|---|
+   | **Pull requests** | Read & Write |
+   | **Contents** | Read & Write |
+   | **Actions** | Read & Write |
+   | **Commit statuses** | Read |
+   | **Checks** | Read |
+   | **Metadata** | Read |
+4. Click **Create GitHub App**, then note the **App ID**
+5. Under **Private keys**, click **Generate a private key** (downloads a `.pem` file)
+6. Click **Install App** in the sidebar → select your org → choose the target repositories
+7. In each target repository, add:
+   - **Variable** `MERGE_QUEUE_APP_ID` → the App ID (Settings → Secrets and variables → Actions → Variables)
+   - **Secret** `MERGE_QUEUE_APP_PRIVATE_KEY` → contents of the `.pem` file (Settings → Secrets and variables → Actions → Secrets)
+
+<details>
+<summary>Option B: Personal Access Token (PAT)</summary>
+
+Create a dedicated bot account (e.g. `yourorg-merge-bot`) with **write** (not
+admin) collaborator access. A non-admin account cannot bypass branch protection
+rules.
 
 **Create the bot user's fine-grained PAT:**
 
@@ -27,14 +52,18 @@ enforced by GitHub in addition to the merge queue's own validation.
    - **Resource owner**: Your org or personal account
    - **Repository access**: Select only the repositories that need the merge queue
 5. Under **Repository permissions**, set:
-   | Permission | Access | Why |
-   |---|---|---|
-   | **Pull requests** | Read & Write | Merge PRs, post comments, manage labels |
-   | **Contents** | Read & Write | Update branches, delete merged branches |
-   | **Actions** | Read & Write | Trigger workflow self-dispatch |
-   | **Commit statuses** | Read | Read CI status results for validation |
-   | **Metadata** | Read | Required by default |
+   | Permission | Access |
+   |---|---|
+   | **Pull requests** | Read & Write |
+   | **Contents** | Read & Write |
+   | **Actions** | Read & Write |
+   | **Commit statuses** | Read |
+   | **Checks** | Read |
+   | **Metadata** | Read |
 6. Click **"Generate token"** and copy it immediately
+7. In your repository, add a secret: Settings → Secrets → New secret
+   - Name: `MERGE_QUEUE_TOKEN`
+   - Value: [paste token]
 
 <details>
 <summary>Alternative: Classic PAT</summary>
@@ -50,17 +79,13 @@ If you can't use fine-grained tokens (e.g. org policy restrictions):
 > account above). Admin tokens can bypass branch protection rules.
 
 </details>
+</details>
 
-### 2. Add Secret (1 minute)
+### 2. Add Workflows (5 minutes)
 
-In your repository:
-1. Settings → Secrets → New secret
-2. Name: `MERGE_QUEUE_TOKEN`
-3. Value: [paste token]
-
-### 3. Add Workflows (5 minutes)
-
-Create `.github/workflows/` directory and add three files:
+Create `.github/workflows/` directory and add three files. The snippets below
+use a **GitHub App** for authentication. If you chose a PAT instead, expand the
+alternative at the end of this section.
 
 **merge-queue-entry.yml**:
 ```yaml
@@ -75,9 +100,14 @@ jobs:
     if: github.event.label.name == (vars.MERGE_QUEUE_LABEL || 'ready')
     runs-on: ubuntu-latest
     steps:
+      - id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.MERGE_QUEUE_APP_ID }}
+          private-key: ${{ secrets.MERGE_QUEUE_APP_PRIVATE_KEY }}
       - uses: BloomAndWild/merge-queue@v1/src/actions/add-to-queue
         with:
-          github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
           queue-label: ${{ vars.MERGE_QUEUE_LABEL || 'ready' }}
           ignore-checks: 'Add PR to Merge Queue,Remove PR from Merge Queue,Process Merge Queue'
 ```
@@ -99,16 +129,21 @@ jobs:
   process-queue:
     runs-on: ubuntu-latest
     steps:
+      - id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.MERGE_QUEUE_APP_ID }}
+          private-key: ${{ secrets.MERGE_QUEUE_APP_PRIVATE_KEY }}
       - id: process
         uses: BloomAndWild/merge-queue@v1/src/actions/process-queue
         with:
-          github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
           queue-label: ${{ vars.MERGE_QUEUE_LABEL || 'ready' }}
           ignore-checks: 'Add PR to Merge Queue,Remove PR from Merge Queue,Process Merge Queue'
       - name: Process next in queue
         if: steps.process.outputs.processed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.MERGE_QUEUE_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: gh workflow run "${{ github.workflow }}" --repo "${{ github.repository }}"
 ```
 
@@ -126,14 +161,49 @@ jobs:
       github.event.action == 'closed'
     runs-on: ubuntu-latest
     steps:
+      - id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.MERGE_QUEUE_APP_ID }}
+          private-key: ${{ secrets.MERGE_QUEUE_APP_PRIVATE_KEY }}
       - uses: BloomAndWild/merge-queue@v1/src/actions/remove-from-queue
         with:
-          github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
 ```
 
 Replace `BloomAndWild` with your GitHub org/username.
 
-### 4. Create Labels (2 minutes)
+<details>
+<summary>Alternative: PAT-based workflow snippets</summary>
+
+If you set up a PAT in step 1, replace the `app-token` step and token reference
+in each workflow above. For example, in **merge-queue-entry.yml**:
+
+```yaml
+    steps:
+      - uses: BloomAndWild/merge-queue@v1/src/actions/add-to-queue
+        with:
+          github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
+          queue-label: ${{ vars.MERGE_QUEUE_LABEL || 'ready' }}
+          ignore-checks: 'Add PR to Merge Queue,Remove PR from Merge Queue,Process Merge Queue'
+```
+
+The self-dispatch step in **merge-queue-manager.yml** becomes:
+
+```yaml
+      - name: Process next in queue
+        if: steps.process.outputs.processed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MERGE_QUEUE_TOKEN }}
+        run: gh workflow run "${{ github.workflow }}" --repo "${{ github.repository }}"
+```
+
+Full PAT-based examples are available in
+[examples/target-repo-workflows/](examples/target-repo-workflows/).
+
+</details>
+
+### 3. Create Labels (2 minutes)
 
 Create the trigger label (use your custom name if you set `MERGE_QUEUE_LABEL`):
 
@@ -148,18 +218,18 @@ gh label create "merge-queue-conflict" --color "b60205"
 
 Or create manually in GitHub UI: Issues → Labels → New label
 
-### 5. (Optional) Customise the Trigger Label
+### 4. (Optional) Customise the Trigger Label
 
 By default the queue is triggered by the `ready` label. To use a different name:
 
 1. Go to your repository → **Settings → Secrets and variables → Actions → Variables**
 2. Click **New repository variable**
 3. Name: `MERGE_QUEUE_LABEL`, Value: your preferred label name (e.g. `ship-it`)
-4. Create the matching label in step 4 above
+4. Create the matching label in step 3 above
 
 The example workflows already reference this variable with a fallback to `ready`, so no workflow file edits are needed.
 
-### 6. Test (5 minutes)
+### 5. Test (5 minutes)
 
 1. Create a test PR
 2. Get it approved
@@ -195,8 +265,9 @@ You can also check which PRs are queued by searching for the `queued-for-merge` 
 
 **Workflows don't run**
 - Check Actions tab for errors
-- Verify `MERGE_QUEUE_TOKEN` exists
-- Ensure token has the required permissions (see Step 1 above)
+- **GitHub App**: verify `MERGE_QUEUE_APP_ID` variable and `MERGE_QUEUE_APP_PRIVATE_KEY` secret exist, and the App is installed on the repo
+- **PAT**: verify `MERGE_QUEUE_TOKEN` secret exists and the token hasn't expired
+- Ensure token/App has the required permissions (see Step 1 above)
 
 **PR not merging / "checks no longer passing"**
 - Check PR comments for details
@@ -207,8 +278,8 @@ You can also check which PRs are queued by searching for the `queued-for-merge` 
   add `ignore-checks` to your workflow inputs (see Customization below)
 
 **Permission errors**
-- Verify PAT has access to the repo
-- Check token hasn't expired
+- **GitHub App**: check the App's permissions match the table in Step 1; verify the App is installed on this specific repository
+- **PAT**: verify PAT has access to the repo and hasn't expired
 
 ## Default Behavior
 
@@ -266,7 +337,7 @@ Add this step to your `merge-queue-manager.yml` **after** the process step and *
   uses: BloomAndWild/merge-queue@v1/src/actions/notify
   with:
     slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
-    github-token: ${{ secrets.MERGE_QUEUE_TOKEN }}
+    github-token: ${{ steps.app-token.outputs.token }}  # or ${{ secrets.MERGE_QUEUE_TOKEN }} for PAT
     repository: ${{ github.repository }}
     pr-number: ${{ steps.process.outputs.pr-number }}
     result: ${{ steps.process.outputs.result }}
@@ -308,7 +379,7 @@ Notifications are sent for `merged`, `failed`, and `conflict` results. The notif
 - **Manager**: After entry/remove workflows complete + self-dispatch while queue has items
 - **Remove**: When the trigger label is removed or PR is closed
 
-### Required Token Permissions (Fine-Grained PAT)
+### Required Permissions (GitHub App or Fine-Grained PAT)
 
 | Permission | Access |
 |---|---|
@@ -316,6 +387,7 @@ Notifications are sent for `merged`, `failed`, and `conflict` results. The notif
 | Contents | Read & Write |
 | Actions | Read & Write |
 | Commit statuses | Read |
+| Checks | Read |
 | Metadata | Read |
 
 ---

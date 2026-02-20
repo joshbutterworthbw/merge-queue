@@ -296,10 +296,6 @@ if (result === 'merged') {
 - Validate end-to-end workflows
 - Test cross-repo interactions
 
-### Manual Testing Checklist
-
-See [../claude-plan.md](../claude-plan.md) for comprehensive checklist
-
 ## Deployment
 
 ### Initial Setup

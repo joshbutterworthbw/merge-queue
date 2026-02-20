@@ -223,11 +223,9 @@ with:
 ```
 
 > **Important**: When `require-all-checks: true` (the default), the merge queue
-> validates that all CI checks on the PR pass. This includes the merge queue's
-> own workflow runs. Use `ignore-checks` to exclude those workflow job names so
-> they don't create a circular dependency where a previous failed run blocks the
-> PR from being re-queued. The values should match the `name:` of the jobs in
-> your workflow files.
+> validates that all CI checks on the PR pass. Use `ignore-checks` to exclude any 
+> jobs that can be pending or fail without blocking a merge. 
+> The values should match the `name:` of the jobs in your workflow files.
 
 ## Slack Notifications (Optional)
 
